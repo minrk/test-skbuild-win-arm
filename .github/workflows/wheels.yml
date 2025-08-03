@@ -51,12 +51,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: macos-15
-            name: mac-cpython
-            cibw:
-              arch: universal2
-              build: "cp*"
-
           - name: manylinux-x86_64
             cibw:
               arch: x86_64
