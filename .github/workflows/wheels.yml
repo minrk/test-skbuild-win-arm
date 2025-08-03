@@ -81,6 +81,18 @@ jobs:
               arch: ARM64
               build: "*t*"
 
+          - os: windows-2025
+            name: win_2025_arm64_freethreaded
+            architecture: x64
+            cibw:
+              arch: ARM64
+              build: "*t*"
+
+          - os: windows-11-arm
+            name: win_arm_native
+            cibw:
+              build: "*t*"
+
     steps:
       - uses: actions/checkout@v4
 
