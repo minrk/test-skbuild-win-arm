@@ -1,0 +1,119 @@
+name: Release
+
+on:
+  push:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHONUNBUFFERED: "1"
+
+jobs:
+  sdist:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: setup python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: install dependencies
+        run: |
+          pip install --upgrade pip build
+
+      - name: build sdist
+        run: |
+          python -m build --sdist .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sdist
+          path: "dist/*.tar.gz"
+          if-no-files-found: error
+
+  wheel:
+    runs-on: ${{ matrix.os || 'ubuntu-24.04' }}
+    name: wheel-${{ matrix.name }}
+
+    env:
+      CIBW_BUILD: "${{ matrix.cibw.build || '*' }}"
+      CIBW_SKIP: "${{ matrix.cibw.skip || '' }}"
+      CIBW_ARCHS: "${{ matrix.cibw.arch || 'auto' }}"
+      CIBW_PLATFORM: "${{ matrix.cibw.platform || 'auto' }}"
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15
+            name: mac-cpython
+            cibw:
+              arch: universal2
+              build: "cp*"
+
+          - name: manylinux-x86_64
+            cibw:
+              arch: x86_64
+              build: "*manylinux*"
+
+          - name: manylinux-arm
+            os: ubuntu-24.04-arm
+            cibw:
+              build: "*manylinux*"
+
+          - os: windows-2022
+            name: win_amd64
+            architecture: x64
+            cibw:
+              build: "cp*win_amd64"
+
+          - os: windows-2022
+            name: win_arm64
+            architecture: x64
+            cibw:
+              arch: ARM64
+              skip: "*t*"
+
+          - os: windows-2022
+            name: win_arm64_freethreaded
+            architecture: x64
+            cibw:
+              arch: ARM64
+              build: "*t*"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: setup python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          architecture: ${{ matrix.architecture }}
+
+      - name: install dependencies
+        run: |
+          pip install --upgrade setuptools pip wheel cibuildwheel
+
+      - name: show packages
+        run: |
+          pip freeze
+
+      - name: list target wheels
+        run: |
+          python -m cibuildwheel . --print-build-identifiers
+
+      - name: build wheels
+        run: |
+          python -m cibuildwheel .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.name }}
+          path: "wheelhouse/*"
+          if-no-files-found: error
