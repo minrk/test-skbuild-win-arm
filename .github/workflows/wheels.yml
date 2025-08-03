@@ -93,12 +93,12 @@ jobs:
       - name: setup python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
           architecture: ${{ matrix.architecture }}
 
       - name: install dependencies
         run: |
-          pip install --upgrade setuptools pip wheel cibuildwheel
+          python -m pip install --upgrade pip cibuildwheel
 
       - name: show packages
         run: |
